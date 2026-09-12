@@ -22,7 +22,7 @@ public class PlayerSwitcher : MonoBehaviour
     {
         for (int i = 0; i < players.Count; i++)
         {
-            SetPlayerActive(i, false);
+            SetPlayerActive(i, false); // ตอนเริ่มเกม ยังไม่มีใครตาย ปิดทั้งหมดปกติ
         }
 
         int firstValidIndex = FindFirstValidPlayer();
@@ -32,23 +32,18 @@ public class PlayerSwitcher : MonoBehaviour
         }
         else
         {
-            Debug.LogError("❌ ไม่พบ Player ที่สมบูรณ์ในรายการ! โปรดตรวจสอบใน Inspector");
+            Debug.LogError("ไม่พบ Player ที่สมบูรณ์ในรายการ!");
         }
     }
 
-    // ✅ เพิ่มฟังก์ชันใหม่: ค้นหา index แรกที่ไม่เป็น Null
     int FindFirstValidPlayer()
     {
         for (int i = 0; i < players.Count; i++)
         {
-            if (players[i] != null &&
-                players[i].playerObject != null &&
-                players[i].playerCamera != null)
-            {
+            if (players[i] != null && players[i].playerObject != null && players[i].playerCamera != null)
                 return i;
-            }
         }
-        return -1; // ไม่เจอเลย
+        return -1;
     }
 
     void ActivatePlayer(int index)
@@ -58,15 +53,13 @@ public class PlayerSwitcher : MonoBehaviour
         var slot = players[index];
         if (slot == null || slot.playerObject == null || slot.playerCamera == null)
         {
-            Debug.LogWarning($"⚠️ Slot ที่ {index} ข้อมูลไม่ครบ ข้ามไป...");
+            Debug.LogWarning($"Slot ที่ {index} ข้อมูลไม่ครบ ข้ามไป...");
             return;
         }
 
         currentPlayerIndex = index;
         SetPlayerActive(index, true);
 
-        // PlayerHealth.OnEnable() จะลงทะเบียนกับ Health Bar เองอัตโนมัติแล้ว
-        // แต่ยังต้องผูก Death Event ไว้ตรงนี้ เพื่อรู้ว่าเมื่อไหร่ต้องสลับตัว
         PlayerHealth health = slot.playerObject.GetComponent<PlayerHealth>();
         if (health != null)
         {
@@ -78,18 +71,19 @@ public class PlayerSwitcher : MonoBehaviour
     void SetPlayerActive(int index, bool isActive)
     {
         if (index < 0 || index >= players.Count) return;
+
         var slot = players[index];
         if (slot == null) return;
 
         if (slot.playerObject != null)
             slot.playerObject.SetActive(isActive);
+
         if (slot.playerCamera != null)
             slot.playerCamera.SetActive(isActive);
     }
 
     void HandlePlayerDeath()
     {
-        // ยกเลิกการฟัง Event ของตัวเก่า
         if (currentPlayerIndex >= 0 && currentPlayerIndex < players.Count)
         {
             var oldSlot = players[currentPlayerIndex];
@@ -100,26 +94,57 @@ public class PlayerSwitcher : MonoBehaviour
                 {
                     oldHealth.OnPlayerDeath -= HandlePlayerDeath;
                 }
+
+                // ไม่ SetActive(false) ทั้งตัว - แค่ปิดการควบคุม เหลือศพให้เห็น
+                TurnIntoCorpse(oldSlot);
             }
-            SetPlayerActive(currentPlayerIndex, false);
         }
 
-        // ✅ ปรับ: หาตัวถัดไปที่ใช้งานได้จริง (ข้ามตัวที่หาย/Null)
         int nextIndex = currentPlayerIndex;
         do
         {
             nextIndex++;
             if (nextIndex >= players.Count)
             {
-                Debug.Log("✅ ALL PLAYERS ELIMINATED - Game Over");
+                Debug.Log("ALL PLAYERS ELIMINATED - Game Over");
                 return;
             }
         }
-        while (players[nextIndex] == null ||
-               players[nextIndex].playerObject == null ||
-               players[nextIndex].playerCamera == null);
+        while (players[nextIndex] == null || players[nextIndex].playerObject == null || players[nextIndex].playerCamera == null);
 
-        // เปิดตัวถัดไปที่ใช้ได้จริง
         ActivatePlayer(nextIndex);
+    }
+
+    void TurnIntoCorpse(PlayerSlot slot)
+    {
+        GameObject obj = slot.playerObject;
+
+        if (slot.playerCamera != null)
+            slot.playerCamera.SetActive(false);
+
+        PlayerMovement movement = obj.GetComponent<PlayerMovement>();
+        if (movement != null) movement.enabled = false;
+
+        MouseLook mouseLook = obj.GetComponentInChildren<MouseLook>();
+        if (mouseLook != null) mouseLook.enabled = false;
+
+        PlayerInteraction interaction = obj.GetComponent<PlayerInteraction>();
+        if (interaction != null) interaction.enabled = false;
+
+        CharacterController controller = obj.GetComponent<CharacterController>();
+        if (controller != null) controller.enabled = false; // ปิดตรงนี้จะทำให้ Collider ของ CharacterController ไม่กันชนอีกต่อไปด้วย
+
+        int defaultLayer = LayerMask.NameToLayer("Default");
+        SetLayerRecursively(obj, defaultLayer);
+        obj.tag = "Untagged";
+    }
+
+    void SetLayerRecursively(GameObject obj, int layer)
+    {
+        obj.layer = layer;
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursively(child.gameObject, layer);
+        }
     }
 }

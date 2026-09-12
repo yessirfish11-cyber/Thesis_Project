@@ -7,6 +7,7 @@ public class KillerAttack : MonoBehaviour
 {
     [Header("Attack")]
     public float attackRange = 2f;
+    public float attackReachBuffer = 0.5f;
     public float attackCooldown = 1.5f;      // เวลารอก่อนจะตีได้อีกครั้ง (นับตั้งแต่ตีครั้งก่อน)
     public float damageDelay = 0.5f;         // ดีเลย์ก่อนดาเมจจะลง (ให้ตรงจังหวะแอนิเมชันยกมือ/ฟัน)
     public float idleAfterAttack = 1f;
@@ -98,11 +99,17 @@ public class KillerAttack : MonoBehaviour
 
         if (vision.DetectedPlayer != null)
         {
-            PlayerHealth targetHealth = vision.DetectedPlayer.GetComponent<PlayerHealth>();
-            if (targetHealth != null && !targetHealth.IsDead)
+            float currentDistance = Vector3.Distance(transform.position, vision.DetectedPlayer.position);
+
+            if (currentDistance <= attackRange)
             {
-                targetHealth.TakeHit(gameObject);
+                PlayerHealth targetHealth = vision.DetectedPlayer.GetComponent<PlayerHealth>();
+                if (targetHealth != null && !targetHealth.IsDead)
+                {
+                    targetHealth.TakeHit(gameObject);
+                }
             }
+            // ถ้าไกลเกินไปแล้ว -> ไม่ลงดาเมจ (ตีพลาด เพราะผู้เล่นหนีทัน)
         }
 
         // พัก Idle หลังตีเสร็จ ก่อนจะกลับไปไล่ล่าต่อ (เหมือนคูลดาวน์)
@@ -122,5 +129,16 @@ public class KillerAttack : MonoBehaviour
         {
             agent.isStopped = true;
         }
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        // วงกลมสีแดง = ระยะที่เริ่มโจมตีได้ (attackRange)
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackRange);
+
+        // วงกลมสีเหลือง = ระยะเผื่อตอนลงดาเมจจริง (ถ้าใส่ attackReachBuffer ไว้)
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, attackRange + attackReachBuffer);
     }
 }
