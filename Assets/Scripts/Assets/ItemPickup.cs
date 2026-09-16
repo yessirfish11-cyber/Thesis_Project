@@ -47,9 +47,12 @@ public class ItemPickup : MonoBehaviour
 
         if (playerInRange && canPickup)
         {
-            if (!wasShowingPrompt) // แสดงแค่ครั้งแรกที่เข้าเงื่อนไข ไม่ใช่ทุกเฟรม
+            if (!wasShowingPrompt)
             {
-                InteractionPromptUI.Instance?.Show($"[E] {itemName}", this);
+                if (InteractionPromptUI.Instance != null)
+                {
+                    InteractionPromptUI.Instance.Show($"[E] {itemName}", this, InteractionPromptUI.PromptType.Item);
+                }
                 wasShowingPrompt = true;
             }
         }
@@ -57,12 +60,13 @@ public class ItemPickup : MonoBehaviour
         {
             if (wasShowingPrompt)
             {
-                InteractionPromptUI.Instance?.Hide(this);
+                InteractionPromptUI.Instance?.Hide(this, InteractionPromptUI.PromptType.Item);
                 wasShowingPrompt = false;
             }
         }
 
         if (!canPickup) return;
+
         if (playerInRange && Input.GetKeyDown(pickupKey))
         {
             PickUp();
@@ -71,9 +75,10 @@ public class ItemPickup : MonoBehaviour
 
     void PickUp()
     {
-        PlayerInventory inventory = PlayerInventory.Instance; // เปลี่ยนจาก FindFirstObjectByType
+        PlayerInventory inventory = PlayerInventory.Instance;
         if (inventory != null) inventory.AddItem(this);
-        InteractionPromptUI.Instance?.Hide(this);
+
+        InteractionPromptUI.Instance?.Hide(this, InteractionPromptUI.PromptType.Item);
         Destroy(gameObject);
     }
 
@@ -88,7 +93,7 @@ public class ItemPickup : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             playerInRange = false;
-            InteractionPromptUI.Instance?.Hide(this);
+            InteractionPromptUI.Instance?.Hide(this, InteractionPromptUI.PromptType.Item);
         }
     }
 }

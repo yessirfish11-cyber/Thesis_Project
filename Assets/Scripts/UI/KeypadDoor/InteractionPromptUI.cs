@@ -3,6 +3,8 @@ using TMPro;
 
 public class InteractionPromptUI : MonoBehaviour
 {
+    public enum PromptType { Item, Door }
+
     private static InteractionPromptUI _instance;
     public static InteractionPromptUI Instance
     {
@@ -14,12 +16,16 @@ public class InteractionPromptUI : MonoBehaviour
         }
     }
 
-    [Header("UI Elements")]
-    public GameObject promptPanel;
-    public TMP_Text promptText;
+    [Header("Item Prompt UI")]
+    public GameObject itemPromptPanel;
+    public TMP_Text itemPromptText;
 
-    // เก็บ "เจ้าของ" ข้อความที่กำลังแสดงอยู่ตอนนี้
-    private object currentSource;
+    [Header("Door Prompt UI")]
+    public GameObject doorPromptPanel;
+    public TMP_Text doorPromptText;
+
+    private object currentItemSource;
+    private object currentDoorSource;
 
     void Awake()
     {
@@ -29,22 +35,40 @@ public class InteractionPromptUI : MonoBehaviour
             return;
         }
         _instance = this;
-        if (promptPanel != null) promptPanel.SetActive(false);
+
+        if (itemPromptPanel != null) itemPromptPanel.SetActive(false);
+        if (doorPromptPanel != null) doorPromptPanel.SetActive(false);
     }
 
-    // ต้องระบุ source (ปกติคือ this ของ ItemPickup ที่เรียก)
-    public void Show(string message, object source)
+    public void Show(string message, object source, PromptType type)
     {
-        currentSource = source;
-        if (promptPanel != null) promptPanel.SetActive(true);
-        if (promptText != null) promptText.text = message;
+        if (type == PromptType.Item)
+        {
+            currentItemSource = source;
+            if (itemPromptPanel != null) itemPromptPanel.SetActive(true);
+            if (itemPromptText != null) itemPromptText.text = message;
+        }
+        else if (type == PromptType.Door)
+        {
+            currentDoorSource = source;
+            if (doorPromptPanel != null) doorPromptPanel.SetActive(true);
+            if (doorPromptText != null) doorPromptText.text = message;
+        }
     }
 
-    // Hide จะทำงานก็ต่อเมื่อคนที่เรียกคือเจ้าของข้อความปัจจุบันเท่านั้น
-    public void Hide(object source)
+    public void Hide(object source, PromptType type)
     {
-        if (currentSource != null && currentSource != source) return; // ไม่ใช่เจ้าของ ห้ามเคลียร์ทับ
-        currentSource = null;
-        if (promptPanel != null) promptPanel.SetActive(false);
+        if (type == PromptType.Item)
+        {
+            if (currentItemSource != null && currentItemSource != source) return;
+            currentItemSource = null;
+            if (itemPromptPanel != null) itemPromptPanel.SetActive(false);
+        }
+        else if (type == PromptType.Door)
+        {
+            if (currentDoorSource != null && currentDoorSource != source) return;
+            currentDoorSource = null;
+            if (doorPromptPanel != null) doorPromptPanel.SetActive(false);
+        }
     }
 }

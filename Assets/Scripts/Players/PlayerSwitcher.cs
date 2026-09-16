@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 public class PlayerSwitcher : MonoBehaviour
 {
+    public static event System.Action OnPlayerSwitched;
+
     [System.Serializable]
     public class PlayerSlot
     {
@@ -99,6 +101,8 @@ public class PlayerSwitcher : MonoBehaviour
                 TurnIntoCorpse(oldSlot);
             }
         }
+
+        OnPlayerSwitched?.Invoke();
 
         int nextIndex = currentPlayerIndex;
         do

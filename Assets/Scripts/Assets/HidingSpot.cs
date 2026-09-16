@@ -70,6 +70,12 @@ public class HidingSpot : MonoBehaviour
         positionBeforeHiding = currentPlayer.transform.position;
         rotationBeforeHiding = currentPlayer.transform.rotation;
 
+        PlayerDetection detection = currentPlayer.GetComponent<PlayerDetection>();
+        if (detection != null)
+        {
+            detection.ResetDetectionInstant(); // ล้างค่าดวงตาทันที -> Killer จะเลิกไล่ทันทีด้วย เพราะ IsEmpty = true
+        }
+
         Quaternion enterRot = facingDirection != null ? facingDirection.rotation : hidePoint.rotation;
 
         teleporter = currentPlayer.GetComponent<PlayerTeleporter>();

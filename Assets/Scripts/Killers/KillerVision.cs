@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class KillerVision : MonoBehaviour
 {
-    [Header("Vision (Detection)")]
+    [Header("การมองเห็น (Detection)")]
     public float viewRadius = 10f;
     [Range(0, 360)]
     public float viewAngle = 90f;
@@ -13,7 +13,10 @@ public class KillerVision : MonoBehaviour
     public Transform DetectedPlayer { get; private set; }
     public bool CanSeePlayer { get; private set; }
 
-    void Awake()
+    // เพิ่ม property นี้ ให้ KillerController มาสั่งได้ว่าตอนนี้ควรสะสมค่าดวงตาไหม
+    public bool ShouldTrackDetection { get; set; } = true;
+
+    void Start()
     {
         if (eyePoint == null)
             eyePoint = transform;
@@ -43,13 +46,20 @@ public class KillerVision : MonoBehaviour
                 {
                     CanSeePlayer = true;
                     DetectedPlayer = targetTransform;
-                    return; // เจอแล้วหยุดเช็คต่อ
+
+                    // เรียกเสมอ ไม่ว่า Killer จะ Patrol หรือ Chase - ไม่ต้องเช็ค ShouldTrackDetection แล้ว
+                    PlayerDetection detection = targetTransform.GetComponent<PlayerDetection>();
+                    if (detection != null)
+                    {
+                        detection.ReportSeen();
+                    }
+
+                    return;
                 }
             }
         }
     }
 
-    // วาด Gizmos ดูรัศมีใน Scene View
     void OnDrawGizmosSelected()
     {
         Transform origin = eyePoint != null ? eyePoint : transform;
