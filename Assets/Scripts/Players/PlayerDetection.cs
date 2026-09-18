@@ -31,6 +31,7 @@ public class PlayerDetection : MonoBehaviour
         }
 
         DetectionValue = Mathf.Clamp01(DetectionValue);
+        Debug.Log(gameObject.name + " LateUpdate ทำงาน | seenThisFrame: " + seenThisFrame + " | ค่าก่อน: " + previousValue.ToString("F3") + " | ค่าหลัง: " + DetectionValue.ToString("F3"));
 
         if (DetectionValue > 0f && previousValue <= 0f)
         {

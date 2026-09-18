@@ -62,11 +62,35 @@ public class PlayerSwitcher : MonoBehaviour
         currentPlayerIndex = index;
         SetPlayerActive(index, true);
 
+        // เพิ่มตรงนี้ - ตั้ง Tag/Layer กลับให้ถูกต้อง เผื่อโดนเปลี่ยนไปตอนเป็นศพในรอบก่อนหน้า
+        RestorePlayerTagAndLayer(slot.playerObject);
+
         PlayerHealth health = slot.playerObject.GetComponent<PlayerHealth>();
         if (health != null)
         {
             health.ResetHealth();
             health.OnPlayerDeath += HandlePlayerDeath;
+        }
+
+        PlayerDetection detection = slot.playerObject.GetComponent<PlayerDetection>();
+        if (detection != null)
+        {
+            detection.ResetDetectionInstant();
+        }
+    }
+
+    void RestorePlayerTagAndLayer(GameObject obj)
+    {
+        obj.tag = "Player";
+
+        int playerLayer = LayerMask.NameToLayer("Player");
+        if (playerLayer != -1)
+        {
+            SetLayerRecursively(obj, playerLayer);
+        }
+        else
+        {
+            Debug.LogWarning("ไม่พบ Layer 'Player' กรุณาตรวจสอบการตั้งค่า Layer");
         }
     }
 
@@ -136,7 +160,17 @@ public class PlayerSwitcher : MonoBehaviour
         if (interaction != null) interaction.enabled = false;
 
         CharacterController controller = obj.GetComponent<CharacterController>();
-        if (controller != null) controller.enabled = false; // ปิดตรงนี้จะทำให้ Collider ของ CharacterController ไม่กันชนอีกต่อไปด้วย
+        if (controller != null) controller.enabled = false;
+
+        // เพิ่มตรงนี้ - ปิด Animator ก่อน แล้วค่อยรีเซ็ต Rotation ให้ตั้งตรงปกติ
+        Animator animator = obj.GetComponentInChildren<Animator>();
+        if (animator != null)
+        {
+            animator.enabled = false;
+        }
+
+        // รีเซ็ต Rotation ให้ตั้งตรง ไม่ให้ค้างท่าเอียงจากตอนถูกตี
+        obj.transform.rotation = Quaternion.Euler(0f, obj.transform.eulerAngles.y, 0f);
 
         int defaultLayer = LayerMask.NameToLayer("Default");
         SetLayerRecursively(obj, defaultLayer);

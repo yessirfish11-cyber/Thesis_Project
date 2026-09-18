@@ -12,8 +12,10 @@ public class KillerController : MonoBehaviour
         Chase
     }
 
-    [Header("Hunt (Chase)")]
+    [Header("การไล่ล่า (Chase)")]
     public float chaseSpeed = 5f;
+
+    [Header("ป้องกันสลับ State เร็วเกินไป")]
     public float reEngageCooldown = 1f;
 
     private NavMeshAgent agent;
@@ -37,12 +39,14 @@ public class KillerController : MonoBehaviour
 
     void Update()
     {
+        reEngageTimer -= Time.deltaTime;
+
         switch (currentState)
         {
             case KillerState.Patrol:
                 patrol.UpdatePatrol();
 
-                if (vision.CanSeePlayer)
+                if (vision.CanSeePlayer && reEngageTimer <= 0f)
                 {
                     PlayerDetection detection = vision.DetectedPlayer.GetComponent<PlayerDetection>();
                     if (detection != null && detection.IsFullyDetected)
@@ -62,12 +66,37 @@ public class KillerController : MonoBehaviour
     {
         if (attack != null && attack.IsBusy) return;
 
-        if (vision.CanSeePlayer)
+        bool targetStillValid = currentTargetDetection != null
+                                 && currentTargetDetection.gameObject.activeInHierarchy;
+
+        if (targetStillValid)
         {
-            agent.SetDestination(vision.DetectedPlayer.position);
+            PlayerHealth targetHealth = currentTargetDetection.GetComponent<PlayerHealth>();
+            if (targetHealth != null && targetHealth.IsDead)
+            {
+                targetStillValid = false;
+            }
         }
 
-        if (currentTargetDetection != null && currentTargetDetection.IsEmpty)
+        if (!targetStillValid)
+        {
+            EnterPatrolState();
+            return;
+        }
+
+        if (vision.CanSeePlayer)
+        {
+            agent.isStopped = false;
+            agent.SetDestination(vision.DetectedPlayer.position);
+        }
+        else
+        {
+            // ตรงนี้คือส่วนสำคัญ - ต้องมีอยู่
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+
+        if (currentTargetDetection.IsEmpty)
         {
             EnterPatrolState();
         }
@@ -77,6 +106,7 @@ public class KillerController : MonoBehaviour
     {
         currentState = KillerState.Chase;
         agent.speed = chaseSpeed;
+        agent.isStopped = false;
 
         if (patrol != null)
         {
@@ -92,14 +122,14 @@ public class KillerController : MonoBehaviour
     void EnterPatrolState()
     {
         currentState = KillerState.Patrol;
-        agent.speed = patrol.patrolSpeed; // ตั้งความเร็วตรงนี้ทันที ไม่รอ BeginPatrol()
+        agent.isStopped = false;
+        agent.speed = patrol.patrolSpeed;
         patrol.BeginPatrol();
         currentTargetDetection = null;
 
-        reEngageTimer = reEngageCooldown; // เริ่มนับเวลาพัก ก่อนจะเข้า Chase ใหม่ได้
+        reEngageTimer = reEngageCooldown;
     }
 
-    // ฟังก์ชันนี้หายไปตอนแก้รอบก่อน - เพิ่มกลับเข้ามา (QTEController เรียกใช้ตอนหยุด Killer ระหว่าง QTE)
     public void SetFrozen(bool frozen)
     {
         if (agent != null)

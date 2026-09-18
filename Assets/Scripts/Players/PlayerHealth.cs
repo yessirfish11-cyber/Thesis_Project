@@ -30,6 +30,16 @@ public class PlayerHealth : MonoBehaviour
         {
             HealthBarUI.Instance.SetTarget(this);
         }
+        UpdateLowHealthEffect();
+    }
+
+    void OnDisable()
+    {
+        // ปิด Effect ทันทีตอนตัวนี้ถูกปิด (สลับตัวละคร/ตาย) กันเอฟเฟกต์ค้าง
+        if (LowHealthEffect.Instance != null)
+        {
+            LowHealthEffect.Instance.StopPulse();
+        }
     }
 
     public void ResetHealth()
@@ -38,6 +48,7 @@ public class PlayerHealth : MonoBehaviour
         IsDead = false;
         hasUsedFirstQTE = false; // รีเซ็ตตอนสลับตัวละครใหม่ด้วย
         OnHealthChanged?.Invoke(CurrentLives, maxLives);
+        UpdateLowHealthEffect();
     }
 
     // เรียกจาก KillerAttack ทุกครั้งที่ตีโดนผู้เล่น
@@ -51,6 +62,7 @@ public class PlayerHealth : MonoBehaviour
         {
             CurrentLives = 1;
             OnHealthChanged?.Invoke(CurrentLives, maxLives);
+            UpdateLowHealthEffect();
             return;
         }
 
@@ -92,6 +104,7 @@ public class PlayerHealth : MonoBehaviour
         {
             // รอดจาก QTE ยังเหลือ 1 ชีวิตเท่าเดิม
             OnHealthChanged?.Invoke(CurrentLives, maxLives);
+            UpdateLowHealthEffect();
         }
         else
         {
@@ -99,9 +112,29 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
+    void UpdateLowHealthEffect()
+    {
+        if (LowHealthEffect.Instance == null) return;
+
+        if (CurrentLives == 1 && !IsDead)
+        {
+            LowHealthEffect.Instance.StartPulse();
+        }
+        else
+        {
+            LowHealthEffect.Instance.StopPulse();
+        }
+    }
+
     void Die()
     {
         IsDead = true;
+
+        if (LowHealthEffect.Instance != null)
+        {
+            LowHealthEffect.Instance.StopPulse();
+        }
+
         OnPlayerDeath?.Invoke();
     }
 }

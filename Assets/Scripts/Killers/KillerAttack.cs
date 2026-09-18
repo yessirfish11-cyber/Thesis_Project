@@ -50,12 +50,12 @@ public class KillerAttack : MonoBehaviour
         if (animator == null || agent == null) return;
 
         float speed;
-
         bool isWaitingAtPatrolPoint = patrol != null && patrol.IsWaitingAtPoint;
 
-        if (IsBusy || isWaitingAtPatrolPoint)
+        // ต้องมี || agent.isStopped ตรงนี้ด้วย
+        if (IsBusy || isWaitingAtPatrolPoint || agent.isStopped)
         {
-            speed = 0f; // บังคับ Idle ทันทีตอนกำลังตี หรือกำลังหยุดพักที่จุด Patrol
+            speed = 0f;
         }
         else
         {
